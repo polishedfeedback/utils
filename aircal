@@ -1,0 +1,49 @@
+#!/bin/bash
+#!/bin/bash
+
+# Function to calculate volumetric weight
+calculate_volumetric_weight() {
+    local length=$1
+    local width=$2
+    local height=$3
+    local volumetric_weight=$(echo "scale=2; ($length * $width * $height) / 6000" | bc)
+    echo $volumetric_weight
+}
+
+# Function to get pallet details and calculate weights
+get_pallet_details() {
+    echo "Enter length (cm):"
+    read length
+    echo "Enter width (cm):"
+    read width
+    echo "Enter height (cm):"
+    read height
+    echo "Enter actual weight (kg):"
+    read actual_weight
+    
+    local volumetric_weight=$(calculate_volumetric_weight $length $width $height)
+    
+    if (( $(echo "$actual_weight > $volumetric_weight" | bc -l) )); then
+        echo "Using actual weight as it is greater than volumetric weight."
+        pallet_weight=$actual_weight
+    else
+        echo "Using volumetric weight."
+        pallet_weight=$volumetric_weight
+    fi
+    
+    echo "Weight considered for this pallet: $pallet_weight kg"
+    
+    total_weight=$(echo "scale=2; $total_weight + $pallet_weight" | bc)
+}
+
+total_weight=0
+add_more="yes"
+
+while [ "$add_more" == "yes" ]; do
+    get_pallet_details
+    echo "Do you want to add another pallet? (yes/no)"
+    read add_more
+done
+
+echo "Total weight considered: $total_weight kg"
+
