@@ -1,0 +1,29 @@
+#!/bin/bash
+
+DOWNLOAD_DIR="$HOME/walls"
+mkdir -p "$DOWNLOAD_DIR"
+QUERY=$1 | tr ' ' '+'
+
+response=$(curl -s "https://wallhaven.cc/api/v1/search?q=$QUERY&sorting=toplist")
+image_urls=$(echo "$response" | jq -r '.data[] | .thumbs.original')
+
+
+TMP_DIR=$(mktemp -d)
+cd "$TMP_DIR" || exit
+
+echo "$image_urls" | while read -r url; do
+    filename=$(basename "$url")
+    curl -s -O "$url"
+done
+
+selected_images=$(sxiv -o -t *)
+
+for selected_image in $selected_images; do
+    full_image_url=$(echo "$response" | jq -r --arg thumb "$selected_image" '.data[] | select(.thumbs.original | endswith($thumb)) | .path')
+
+    curl -o "$DOWNLOAD_DIR/$(basename "$full_image_url")" "$full_image_url"
+    echo "Downloaded: $DOWNLOAD_DIR/$(basename "$full_image_url")"
+done
+
+cd ..
+rm -rf "$TMP_DIR"
